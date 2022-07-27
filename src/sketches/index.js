@@ -1,8 +1,8 @@
 /** @typedef {import('types/sketches').SketchOptions} SketchOptions */
+/** @typedef {import('types/sketches').Paint} Paint */
 
 import Paint from './paint';
 import engine from './engine';
-import Grid from './grid';
 import {setRender} from './engine';
 
 /**
@@ -13,22 +13,14 @@ import {setRender} from './engine';
  */
 export default (id, options) => {
     const context = getContext(id);
-    if (options) setOptions(options, context.canvas);
-    const grid = Grid(context);
-    const p = Paint(context);
-    // @ts-ignore
-    Object.keys(p).forEach(key => (paint[key] = p[key]));
+    const paint = Paint(context);
+    if (options) setOptions(options, context.canvas, paint);
     return {
         context,
-        grid,
+        paint,
         start: () => engine.start(),
         stop: () => engine.stop(),
     };
-};
-
-export const paint = {
-    interpolate: 0,
-    clear: () => {},
 };
 
 /**
@@ -50,13 +42,14 @@ const getContext = id => {
 /**
  * @param {SketchOptions} options
  * @param {HTMLCanvasElement} canvas
+ * @param {Paint} paint
  */
-const setOptions = (options, canvas) => {
+const setOptions = (options, canvas, paint) => {
     setXYWH(options, canvas);
     if (options.size) setSize(options.size, canvas);
     if (options.pos) setPos(options.pos, canvas);
     if (options.border) canvas.style.border = '1px solid black';
-    if (options.clear) setClear();
+    if (options.clear) setClear(paint);
 };
 
 /**
@@ -97,8 +90,11 @@ const setPos = (pos, canvas) => {
     }
 };
 
-// This must always be the first render in the engine (sketch has to be made before anything else)
-const setClear = () => {
+/**
+ * This must always be the first render in the engine (sketch has to be made before anything else)
+ * @param {import('types/sketches').Paint} paint
+ */
+const setClear = paint => {
     setRender({
         id: 'clear',
         show: () => paint.clear(),

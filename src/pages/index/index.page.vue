@@ -1,5 +1,5 @@
 <template>
-    <ScatterPlot :data-x="dataX" :data-y="dataY" :options="{trendLineKey, weatherTypeKey}" />
+    <ScatterPlot :data-x="xAxis" :data-y="yAxis" :options="{trendLineKey, weatherTypeKey}" />
     <VSelect
         v-model="trendLineKey"
         class="absolute bottom-0 mb-24 xl:w-96"
@@ -9,10 +9,11 @@
         Regressie Type
     </VSelect>
     <VSelect
-        v-model="weatherTypeKey"
+        :model-value="weatherTypeKey"
         class="absolute bottom-0"
         :options="settings.weatherTypes"
         :disabled="!statsActive"
+        @change="changeSelection"
     >
         Weer Type
     </VSelect>
@@ -26,7 +27,7 @@
             min="2021-01-01"
             :max="maxStartDate"
             :disabled="!statsActive"
-            @change="event => (selectedStartDate = /**@type {HTMLInputElement} */ (event.target).value)"
+            @change="selectedStartDate = /**@type {HTMLInputElement} */ ($event.target).value"
         />
     </div>
     <div>
@@ -39,20 +40,20 @@
             :min="minEndDate"
             :max="yesterday()"
             :disabled="!statsActive"
-            @change="event => (selectedEndDate = /**@type {HTMLInputElement} */ (event.target).value)"
+            @change="changeSelection"
         />
     </div>
 </template>
 
 <script setup>
+/** @typedef {import('types/graph').AxisProperties} AxisProperties */
 /** @typedef {import('types/data').ReportData} ReportData */
-/** @typedef {import('types/data').WeatherData} WeatherData */
 import ScatterPlot from 'sketches/ScatterPlot/Index.vue';
 import VSelect from 'components/Select.vue';
-import {onMounted, ref, computed} from 'vue';
+import {onMounted, ref, computed, reactive} from 'vue';
 import {getFromApi} from 'services/api';
 import {getEnv} from 'services/env';
-import {addOrSubtractDays, yesterday} from 'services/dates';
+import {addOrSubtractDays, date2Slug, yesterday} from 'services/dates';
 import {statsActive} from 'sketches/ScatterPlot/Stats';
 
 const props = defineProps({
@@ -66,55 +67,62 @@ const props = defineProps({
 /** selected trendLine for plot */
 const trendLineKey = ref('none');
 
-/** @type {import('@vue/runtime-core').Ref<WeatherData[]>} */
-const weather = ref([]);
+/** selected weather type for x-axis */
+const weatherTypeKey = ref('precip');
+
+/** @type {AxisProperties} */
+const xAxis = reactive({
+    ...props.settings.weatherTypes[weatherTypeKey.value],
+    data: [],
+});
 
 /** @type {import('@vue/runtime-core').Ref<ReportData[]>} */
 const reports = ref([]);
 
-/** selected weather type for x-axis */
-const weatherTypeKey = ref('cloudcover');
-
 /** @type {['morning', 'afternoon', 'evening']} */
 const dayparts = ['morning', 'afternoon', 'evening'];
 
-const selectedStartDate = ref('');
-const selectedEndDate = ref('');
+const selectedStartDate = ref('2021-01-01');
+const selectedEndDate = ref(yesterday());
 const minEndDate = computed(() => addOrSubtractDays(selectedStartDate.value, 1));
 const maxStartDate = computed(() => addOrSubtractDays(selectedEndDate.value, -1));
 
-const setDateInputs = () => {
-    selectedStartDate.value = '2021-01-01';
-    selectedEndDate.value = yesterday();
-};
-
 onMounted(async () => {
-    weather.value = await getFromApi(`${getEnv('VITE_APP_URL')}/api/weather-data`);
-    reports.value = await getFromApi(`${getEnv('VITE_APP_URL')}/api/report-data`);
-    setDateInputs();
+    reports.value = await getFromApi(
+        `${getEnv('VITE_APP_URL')}/api/reports/${date2Slug(selectedStartDate.value)}-${date2Slug(
+            selectedEndDate.value,
+        )}`,
+    );
+    xAxis.data = await getFromApi(
+        `${getEnv('VITE_APP_URL')}/api/weather/${weatherTypeKey.value}/${date2Slug(
+            selectedStartDate.value,
+        )}-${date2Slug(selectedEndDate.value)}`,
+    );
 });
 
-const weatherSetting = computed(
-    () =>
-        props.settings.weatherTypes.find(setting => setting.key === weatherTypeKey.value) ||
-        props.settings.weatherTypes[3], // || => default
-);
+/** @param {Event} evt */
+const changeSelection = async evt => {
+    if (evt.target instanceof HTMLSelectElement) weatherTypeKey.value = evt.target.value;
+    if (evt.target instanceof HTMLInputElement) selectedEndDate.value = evt.target.value;
+    xAxis.data = await getFromApi(
+        `${getEnv('VITE_APP_URL')}/api/weather/${weatherTypeKey.value}/${date2Slug(
+            selectedStartDate.value,
+        )}-${date2Slug(selectedEndDate.value)}`,
+    );
+    xAxis.title = props.settings.weatherTypes[weatherTypeKey.value].title;
+    xAxis.unitOfMeasure = props.settings.weatherTypes[weatherTypeKey.value].unitOfMeasure;
+    xAxis.steps = props.settings.weatherTypes[weatherTypeKey.value].steps;
 
-/** data for x-axis based on current selected weather type */
-const dataX = computed(() => {
-    return {
-        title: weatherSetting.value.name,
-        unitOfMeasure: weatherSetting.value.unitOfMeasure,
-        steps: weatherSetting.value.steps,
-        /** get weather values and dates from weather data */
-        data: weather.value.map(weather => ({date: weather.datetime, value: weather[weatherSetting.value.key]})),
-    };
-});
+    reports.value = await getFromApi(
+        `${getEnv('VITE_APP_URL')}/api/reports/${date2Slug(selectedStartDate.value)}-${date2Slug(
+            selectedEndDate.value,
+        )}`,
+    );
+};
 
 const presence = computed(() =>
     reports.value.reduce((/** @type {Object.<string, {total: number, present: number}>} */ acc, report) => {
         // Check minimum and maximum date (default = min and max date)
-        if (report.date < selectedStartDate.value || report.date > selectedEndDate.value) return acc;
         if (!acc[report.date]) acc[report.date] = {total: 0, present: 0};
         setTotalAndPresent(report, acc);
         return acc;
@@ -135,15 +143,15 @@ const setTotalAndPresent = (report, acc) => {
     }
 };
 
-/** data for y-axis (static: presence) */
-const dataY = computed(() => ({
-    title: 'Aanwezigheid',
-    unitOfMeasure: '%',
-    steps: 10,
+/** data and setting values for y-axis (static: presence) */
+const yAxis = computed(() => ({
     /** set presence values and dates for each unique day */
     data: Object.keys(presence.value).map(date => ({
         date,
         value: Math.round((presence.value[date].present * 100) / presence.value[date].total),
     })),
+    title: 'Aanwezigheid',
+    unitOfMeasure: '%',
+    steps: 10,
 }));
 </script>

@@ -7,12 +7,22 @@
         "defineEmits": "readonly",
         "defineProps": "readonly"
     },
-    "extends": ["eslint:recommended", "plugin:vue/vue3-recommended"],
+    "extends": [
+        "eslint:recommended",
+        "plugin:vue/vue3-recommended",
+        "plugin:@typescript-eslint/eslint-recommended",
+        "plugin:@typescript-eslint/recommended"],
+    "parser": "vue-eslint-parser",
     "parserOptions": {
-        "ecmaVersion": "latest",
-        "sourceType": "module"
+        "ecmaVersion": 2022,
+        "sourceType": "module",
+        "parser": "@typescript-eslint/parser",
+        "extraFileExtensions": [".vue"],
+        "ecmaFeatures": {
+            "jsx": true
+        }
     },
-    "plugins": ["vue"],
+    "plugins": ["vue", "@typescript-eslint"],
     "rules": {
         "arrow-parens": ["error", "as-needed"],
         "indent": ["warn", 4, {"SwitchCase": 1}],
@@ -89,6 +99,8 @@
         ],
 
         "vue/no-mutating-props": "error",
-        "vue/multi-word-component-names": "off"
+        "vue/multi-word-component-names": "off",
+        
+        "@typescript-eslint/ban-ts-comment": ["error", {"ts-ignore": "allow-with-description"}]
     }
 }

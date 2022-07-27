@@ -5,7 +5,7 @@
  */
 
 import fs from 'fs/promises';
-import {setData} from '../serverStore/index.js';
+import {setData} from './store.js';
 import {getFromApi} from './api.js';
 import {yesterday} from './dates.js';
 import {getEnv} from './env.js';
@@ -52,7 +52,8 @@ const weather = async () => {
         await fs.writeFile('./data/weatherHistory.json', JSON.stringify(weatherDays));
 
         weatherData1.queryCost += weatherData2.queryCost;
-        const {days, ...weatherMeta} = weatherData1; // eslint-disable-line no-unused-vars
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+        const {days, ...weatherMeta} = weatherData1;
 
         await fs.writeFile('./data/weatherMeta.json', JSON.stringify(weatherMeta));
         return weatherDays;

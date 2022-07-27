@@ -8,8 +8,22 @@ import {setRender} from '../engine';
 /** @typedef {"x"|"y"|"yTitle"|"xTitle"|"mainTitle"} GraphShowElementsNonUnits */
 /** @typedef {import('types/sketches').Paint} Paint */
 
-/** @type {import('types/sketches').Sketch["grid"]["properties"]} */
-let grid;
+const grid = {
+    width: 300,
+    height: 150,
+    xUnits: 32,
+    yUnits: 18,
+    unitWidth: 300 / 32,
+    unitHeight: 150 / 18,
+};
+
+/** @param {HTMLCanvasElement} canvas */
+const setGrid = canvas => {
+    grid.width = canvas.width;
+    grid.height = canvas.height;
+    grid.unitWidth = canvas.width / 32;
+    grid.unitHeight = canvas.height / 18;
+};
 
 const defaults = {
     text: {
@@ -108,16 +122,16 @@ const setPositions = () => {
 
 /**
  * Scatter Plot -> TypeX (Weather type (unit of Measurement)) / TypeY (Presence (%))
- * @param {import("types/sketches").Sketch} sketch
+ * @param {import('types/sketches').Sketch} sketch
  * @returns
  */
 export const createGraph = sketch => {
-    grid = sketch.grid.properties;
+    setGrid(sketch.context.canvas);
     setPositions();
     setUnitOffsets();
     setRender({
         id: 'graph',
-        show,
+        show: () => show(sketch.paint),
     });
 };
 
@@ -126,14 +140,13 @@ const show = paint => {
     // for every element: paint value is type of draw with paint object
     Object.keys(elements).forEach(key => {
         if (key === 'xUnits' || key === 'yUnits') elements[key].units.forEach(el => paint[el.paint](el));
-        // @ts-ignore
         else showElements(key, paint);
     });
 };
 
 /**
  *
- * @param {GraphShowElementsNonUnits} key
+ * @param {string} key
  * @param {Paint} paint
  */
 const showElements = (key, paint) => {

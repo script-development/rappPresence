@@ -24,12 +24,16 @@ let dataX;
 /** @type {GraphData} */
 let dataY;
 
+/** @type {import('types/sketches').Paint} */
+let paint;
+
 /**
  * Create Statistic objects from x & y-axis data
  * @param {SketchAPI} sketch
  */
 export const createStats = sketch => {
     ctx = sketch.context;
+    paint = sketch.paint;
     setRender({
         id: 'stats',
         show: () => {
@@ -79,7 +83,7 @@ const showLinearRegression = () => {
     regressionElement.pos.y2 = getPosY(elements.yUnits, yValue2);
     setRender({
         id: 'linear-regression',
-        show: showRegression,
+        show: () => showRegression(paint),
     });
 };
 
@@ -87,9 +91,9 @@ let bandwidth = 0.3; // [default] smoothing parameter
 
 const showLoessRegression = () => {
     const regressionGenerator = regressionLoess()
-        // @ts-ignore
+        // @ts-ignore no type declaration available for d3-regression package
         .x(d => d.valueX)
-        // @ts-ignore
+        // @ts-ignore no type declaration available for d3-regression package
         .y(d => d.valueY)
         .bandwidth(bandwidth);
     const lines = regressionGenerator(stats);
@@ -110,8 +114,7 @@ const showLoessRegression = () => {
     }
     setRender({
         id: 'loess-regression',
-        /** @param {import('types/sketches').Paint} paint */
-        show: paint => linesConverted.forEach(el => paint.line(el)),
+        show: () => linesConverted.forEach(el => paint.line(el)),
     });
 };
 
@@ -122,12 +125,12 @@ let span;
 let slider;
 
 /**
- * @param {"linear-regression"|"loess-regression"|"none"} newKey
- * @param {"linear-regression"|"loess-regression"|"none"} oldKey
+ * @param {"linearRegression"|"loessRegression"|"none"} newKey
+ * @param {"linearRegression"|"loessRegression"|"none"} oldKey
  */
 export const changeRegression = (newKey, oldKey) => {
     if (oldKey != 'none') {
-        if (oldKey === 'loess-regression') {
+        if (oldKey === 'loessRegression') {
             // remove slider and reset bandwidth
             document.body.removeChild(span);
             document.body.removeChild(slider);
@@ -139,10 +142,10 @@ export const changeRegression = (newKey, oldKey) => {
     if (newKey != 'none') setRegression(newKey);
 };
 
-/** @param {"linear-regression"|"loess-regression"} type */
+/** @param {"linearRegression"|"loessRegression"} type */
 const setRegression = type => {
-    if (type === 'linear-regression') showLinearRegression();
-    if (type === 'loess-regression') {
+    if (type === 'linearRegression') showLinearRegression();
+    if (type === 'loessRegression') {
         showLoessRegression();
 
         // create slider
@@ -239,7 +242,9 @@ const getPosY = (unitsElement, statValue) => {
     return posLength + unitsElement.startY;
 };
 
-const update = () => {};
+const update = () => {
+    //
+};
 
 /**
  * @param {Array<number>} color

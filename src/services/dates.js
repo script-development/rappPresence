@@ -24,3 +24,15 @@ export const addOrSubtractDays = (date, amount) => {
     newDate.setDate(newDate.getDate() + amount);
     return dateToString(newDate);
 };
+
+/** @param {string} date */
+export const date2Slug = date => date.split('-').join('');
+
+/** @param {string} slug */
+export const slug2Date = slug => {
+    const slices = [];
+    slices.push(slug.slice(0, 4)); // year
+    slices.push(slug.slice(4, 6)); // month
+    slices.push(slug.slice(6, 8)); // day
+    return slices.join('-');
+};

@@ -1,5 +1,5 @@
 <template>
-    <canvas id="scatter-plot" class="hidden" style="z-index: -1" />
+    <canvas v-show="showCanvas" id="scatter-plot" style="z-index: -1" />
 </template>
 
 <script setup>
@@ -11,7 +11,7 @@
 /** @typedef {import('types/graph').GraphOption} GraphOption */
 /** @typedef {import('@vue/runtime-core').PropType<GraphOption[]>} GraphOptions */
 
-import {onMounted, watch} from 'vue';
+import {onMounted, ref, watch} from 'vue';
 import Sketch from '..';
 import {createGraph, setGraph, elements} from './Graph';
 import {setStatsX, setStatsY, createStats, changeRegression} from './Stats';
@@ -33,6 +33,8 @@ const props = defineProps({
     },
 });
 
+const showCanvas = ref(false);
+
 watch(
     () => props.dataX,
     dataX => {
@@ -40,6 +42,7 @@ watch(
         setStatsX(dataX);
         changeRegression(props.options.trendLineKey, props.options.trendLineKey);
     },
+    {deep: true},
 );
 watch(
     () => props.dataY,
@@ -48,6 +51,7 @@ watch(
         setStatsY(dataY);
         changeRegression(props.options.trendLineKey, props.options.trendLineKey);
     },
+    {deep: true},
 );
 watch(
     () => props.options.trendLineKey,
@@ -58,11 +62,10 @@ watch(
 
 onMounted(() => {
     const sketch = Sketch('scatter-plot', {pos: 'center', w: 1280, h: 720, clear: true});
-    sketch.context.canvas.classList.remove('hidden');
-    sketch.context.canvas.classList.add('block');
-
     createGraph(sketch);
     createStats(sketch);
+
+    showCanvas.value = true;
 
     sketch.start();
 });

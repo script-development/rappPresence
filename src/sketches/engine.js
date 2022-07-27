@@ -1,9 +1,7 @@
-import {paint} from 'sketches/index.js';
+/** @type {{id: string, update: (deltaTime: number) => void}[]} */
+export const updates = [];
 
-/** @type {{update: function}[]} */
-let updates = [];
-
-/** @type {{id: string, show: function}[]} */
+/** @type {{id: string, show: (interpolate: number) => void}[]} */
 export const render = [];
 
 // mainloop
@@ -11,6 +9,7 @@ let maxFPS = 120;
 let step = 1000 / maxFPS;
 let delta = 0;
 let lastTimeStamp = 0;
+let interpolate = 0;
 
 // start/stop
 let requestID = 0;
@@ -42,8 +41,8 @@ const mainLoop = timeStamp => {
     calculateFPS(timeStamp);
     simulate();
 
-    paint.interpolate = delta / step;
-    for (let i = 0; i < render.length; i++) render[i].show(paint);
+    interpolate = delta / step;
+    for (let i = 0; i < render.length; i++) render[i].show(interpolate);
 };
 
 const simulate = () => {
@@ -75,7 +74,7 @@ const start = () => {
     if (!started) {
         started = true; // prevent requesting multiple frames
         requestID = requestAnimationFrame(timeStamp => {
-            for (let i = 0; i < render.length; i++) render[i].show(paint); // initial render
+            for (let i = 0; i < render.length; i++) render[i].show(interpolate); // initial render
             running = true;
             lastTimeStamp = timeStamp;
             lastFPSUpdate = timeStamp;
@@ -93,7 +92,7 @@ const stop = () => {
 };
 
 /**
- * @param {{id: string, show: function}} obj
+ * @param {{id: string, show: (interpolate: number) => void}} obj
  * @returns {number} the length of the render array
  */
 export const setRender = obj => render.push(obj);
@@ -104,7 +103,7 @@ export const unsetRender = id => {
     if (index != -1) render.splice(index, 1);
 };
 
-/** @param {{update: function}} obj */
+/** @param {{id: string, update: (interpolate: number) => void}} obj */
 export const setUpdate = obj => updates.push(obj);
 
 export default {

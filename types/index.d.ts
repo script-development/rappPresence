@@ -1,13 +1,11 @@
-import { PageContextBuiltIn } from "vite-plugin-ssr";
-
-export interface PageProps {}
+import {PageContextBuiltIn} from 'vite-plugin-ssr';
 
 export interface PageContext extends PageContextBuiltIn{
     documentProps: {
         title: string,
         description: string,
     },
-    params: Object<string, string>,
+    params: Record<string, string>,
     url: string,
     weatherData: Array<WeatherData>,
     reportData: {

@@ -4,8 +4,8 @@ import {renderPage} from 'vite-plugin-ssr';
 import express from 'express';
 import vite from 'vite';
 import path from 'path';
-import {deploy} from './services/data.js';
-import {getData} from './serverStore/index.js';
+import {deploy} from './services/serverData.js';
+import {getSelectedWeather, getSelectedReports} from './services/clientData.js';
 
 await deploy();
 
@@ -27,11 +27,13 @@ const root = path.resolve(path.dirname(''));
         app.use(viteDevMiddleware);
     }
 
-    app.get('/api/weather-data', async (req, res) => {
-        res.send(getData('weatherData'));
+    app.get('/api/weather/:type/:from-:to', async (req, res) => {
+        const requestData = getSelectedWeather(req.params.type, req.params.from, req.params.to);
+        res.send(requestData);
     });
-    app.get('/api/report-data', async (req, res) => {
-        res.send(getData('reportData'));
+    app.get('/api/reports/:from-:to', async (req, res) => {
+        const requestData = getSelectedReports(req.params.from, req.params.to);
+        res.send(requestData);
     });
 
     app.get('*', async (req, res, next) => {

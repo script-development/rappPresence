@@ -1,4 +1,11 @@
-export interface GraphData {
+
+export interface GraphOption {
+    id: number,
+    name: string,
+    active: boolean,
+}
+
+export interface AxisProperties {
     title: string,
     unitOfMeasure: string,
     steps: number,
@@ -8,10 +15,14 @@ export interface GraphData {
         }[],
 }
 
-export interface GraphOption {
-    id: number,
-    name: string,
-    active: boolean,
+export interface GraphData {
+    title: string,
+    unitOfMeasure: string,
+    steps: number,
+    data: {
+            date: string,
+            value: number,
+        }[],
 }
 
 export interface GraphTextElement {
@@ -46,6 +57,7 @@ export interface GraphUnitsElement {
 }
 
 export interface GraphElements {
+    [key: string],
     x: GraphLineElement,
     y: GraphLineElement,
     xTitle: GraphTextElement,
@@ -58,7 +70,7 @@ export interface GraphElements {
 export interface Stats {
     update: () => void,
     show: () => void,
-    setX: (xUnits: Graph["xUnits"], yUnits: Graph["yUnits"], dataX: GraphData) => void,
+    // setX: (xUnits: Graph['xUnits'], yUnits: Graph['yUnits'], dataX: GraphData) => void,
 }
 
 export interface Stat {
@@ -67,7 +79,7 @@ export interface Stat {
     valueY: number,
     date: string,
     id: number,
-    show: (interpolate?: number) => void,
-    update: (delta?: number) => void,
+    show: () => void,
+    update: () => void,
 }
 
